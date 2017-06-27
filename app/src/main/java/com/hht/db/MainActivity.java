@@ -19,11 +19,10 @@ import static com.hht.db.DateBaseManager.DB_NAME;
 import static com.hht.db.DateBaseManager.DB_PATH;
 
 public class MainActivity extends AppCompatActivity {
-    private HDBManager manager=null;
-    private HDBManager manager2=null;
-    private ISQLStatement statement1= null;
-    private ISQLStatement statement2= null;
-    private BackAppInfo info=null;
+    private HDBManager manager = null;
+    private ISQLStatement statement = null;
+    private BackAppInfo info = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        info=new BackAppInfo();
+        info = new BackAppInfo();
         info.setmPkgName("1234567");
         info.setmAppName("jinyaqiao");
         info.setmDate("dddddddd");
@@ -42,38 +41,62 @@ public class MainActivity extends AppCompatActivity {
         info.setmOldVersionCode(4);
         info.setmNewVersionName("iiiiiiii");
         info.setmOldVersionName("99989989");
-        manager=new HDBManager(this,DB_PATH + File.separator + DB_NAME);
-        manager2=new HDBManager(this,DB_PATH + File.separator + DB_NAME);
-        statement1= SQLStatementImp.getInstance(manager.getWritableDatabase());
-        statement2= SQLStatementImp.getInstance(manager2.getWritableDatabase());
-
-        new Thread(new MyRunable2()).start();
-       // for(int i=0;i<101;i++){
-            new Thread(new MyRunable()).start();
-        //}
+        manager =  HDBManager.getInstance(this, DB_PATH + File.separator + DB_NAME);
+        statement = SQLStatementImp.getInstance(manager.getWritableDatabase());
+        test3();
     }
-    class MyRunable implements Runnable{
+
+
+    /*
+     * 测试多线程读写数据库
+     */
+    private void test1() {
+        for (int i = 0; i < 101; i++) {
+            new Thread(new MyRunable()).start();
+        }
+    }
+
+    /*
+    * 测试边插入边删除
+    */
+    private void test2() {
+
+        new Thread(new MyRunable()).start();
+        new Thread(new MyRunable3()).start();
+    }
+
+    /*
+   * 测试边读边删除
+   */
+    private void test3() {
+
+        new Thread(new MyRunable4()).start();
+        new Thread(new MyRunable3()).start();
+    }
+
+    class MyRunable implements Runnable {
 
         @Override
         public void run() {
-            int count=0;
-            while (count<5000){
-               // List<Map<String, Object>> list=manager.query("select * from db_version",null);
+            int count = 0;
+            while (count < 5000) {
+                // List<Map<String, Object>> list=manager.query("select * from db_version",null);
                 count++;
-                Log.i("===jinyaqiao=====","====MyRunable1========"+"count====="+count);
-                List<Map<String, Object>> list=statement1.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
-                Log.i("===jinyaqiao=====","insertOrUpdateBackAppData====list.size()======"+list.size());
+                Log.i("===jinyaqiao=====", "====MyRunable1========" + "count=====" + count);
+                List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+                Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData====list.size()======" + list.size());
                 if (list.size() > 0) {
-                    long ret=SQLStatementImp.getInstance(manager.getWritableDatabase()).update("back_app_info",getContentValues(info),"mPkgName=?",new String[]{info.getmPkgName()});
-                    Log.i("===jinyaqiao=====","insertOrUpdateBackAppData========update  result======"+ret);
+                    long ret = statement.update("back_app_info", getContentValues(info), "mPkgName=?", new String[]{info.getmPkgName()});
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========update  result======" + ret);
                 } else {
-                    long ret =SQLStatementImp.getInstance(manager.getWritableDatabase()).insert("back_app_info",getContentValues(info));
-                    Log.i("===jinyaqiao=====","insertOrUpdateBackAppData========insert  result======"+ret);
+                    long ret = statement.insert("back_app_info", getContentValues(info));
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========insert  result======" + ret);
                 }
             }
         }
     }
-    class MyRunable2 implements Runnable{
+
+    class MyRunable2 implements Runnable {
 
         @Override
         public void run() {
@@ -82,49 +105,81 @@ public class MainActivity extends AppCompatActivity {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            int count=0;
-            while (count<5000){
-               // List<Map<String, Object>> list=manager2.query("select * from db_version",null);
+            int count = 0;
+            while (count < 5000) {
+                // List<Map<String, Object>> list=manager2.query("select * from db_version",null);
                 count++;
-                Log.i("===jinyaqiao=====","====MyRunable2========"+"count====="+count);
+                Log.i("===jinyaqiao=====", "====MyRunable2========" + "count=====" + count);
+                List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+                Log.i("===jinyaqiao=====", "=====MyRunable2====list.size()======" + list.size());
+            }
+        }
+    }
+
+    class MyRunable3 implements Runnable {
+
+        @Override
+        public void run() {
+            int count = 0;
+            while (count < 5000) {
+                count++;
                 delete(info);
             }
         }
     }
+    class MyRunable4 implements Runnable {
+
+        @Override
+        public void run() {
+            int count = 0;
+            while (count < 5000) {
+                count++;
+                select();
+            }
+        }
+    }
+
     public void insertOrUpdateBackAppData(BackAppInfo info) {
 
-        List<Map<String, Object>> list=statement1.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
-        Log.e("===jinyaqiao=====","insertOrUpdateBackAppData====list.size()======"+list.size());
-            if (list.size() > 0) {
-                long ret=statement1.update("back_app_info",getContentValues(info),"mPkgName=?",new String[]{info.getmPkgName()});
-                Log.e("===jinyaqiao=====","insertOrUpdateBackAppData========update  result======"+ret);
-            } else {
-                long ret =statement1.insert("back_app_info",getContentValues(info));
-                Log.e("===jinyaqiao=====","insertOrUpdateBackAppData========insert  result======"+ret);
-            }
+        List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+        Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData====list.size()======" + list.size());
+        if (list.size() > 0) {
+            long ret = statement.update("back_app_info", getContentValues(info), "mPkgName=?", new String[]{info.getmPkgName()});
+            Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData========update  result======" + ret);
+        } else {
+            long ret = statement.insert("back_app_info", getContentValues(info));
+            Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData========insert  result======" + ret);
+        }
 
     }
+
     private void delete(BackAppInfo info) {
-        List<Map<String, Object>> list = statement1.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
-        Log.i("===jinyaqiao=====", "delete==========list.size()"+list.size());
-        if (list.size() > 0) {
-            long ret=SQLStatementImp.getInstance(manager.getWritableDatabase()).delete("back_app_info", "mPkgName=?", new String[]{info.getmPkgName()});
-            Log.i("===jinyaqiao=====","===delete========insert  result======"+ret);
-        }
+
+        long ret = statement.delete("back_app_info", "mPkgName=?", new String[]{info.getmPkgName()});
+        Log.i("===jinyaqiao=====", "===delete========insert  result======" + ret);
+
     }
+
+    private void select() {
+        List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+        Log.i("===jinyaqiao=====", "select==========list.size()" + list.size());
+
+    }
+
     public void insertOrUpdateBackAppData2(BackAppInfo info) {
 
-        List<Map<String, Object>> list=statement2.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
-        Log.e("===jinyaqiao=====","insertOrUpdateBackAppData2======list.size()======"+list.size());
+        List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+        Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData2======list.size()======" + list.size());
         if (list.size() > 0) {
-            long ret=statement2.update("back_app_info",getContentValues(info),"mPkgName=?",new String[]{info.getmPkgName()});
-            Log.e("===jinyaqiao=====","insertOrUpdateBackAppData2=========update  result======"+ret);
+            long ret = statement.update("back_app_info", getContentValues(info), "mPkgName=?", new String[]{info.getmPkgName()});
+            Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData2=========update  result======" + ret);
         } else {
-            long ret =statement2.insert("back_app_info",getContentValues(info));
-            Log.e("===jinyaqiao=====","insertOrUpdateBackAppData2========insert  result======"+ret);
+            long ret = statement.insert("back_app_info", getContentValues(info));
+            Log.e("===jinyaqiao=====", "insertOrUpdateBackAppData2========insert  result======" + ret);
         }
 
     }
+
     private ContentValues getContentValues(BackAppInfo info) {
         ContentValues values = new ContentValues();
         values.put("mPkgName", info.getmPkgName());

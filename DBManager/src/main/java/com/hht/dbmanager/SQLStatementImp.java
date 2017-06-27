@@ -57,7 +57,6 @@ public class SQLStatementImp implements ISQLStatement {
                 if (cursor != null) {
                     cursor.close();
                 }
-
             }
             return rsall;
         }

@@ -8,11 +8,20 @@ import android.database.sqlite.SQLiteDatabase;
  */
 
 public class HDBManager extends HSQLiteDatabaseHelper {
-
-    public HDBManager(Context context, String path) {
+    private static HDBManager instance=null;
+    private HDBManager(Context context, String path) {
         super(context, path);
     }
-
+    public static HDBManager getInstance(Context context, String path) {
+        if (instance == null) {
+            synchronized (SQLStatementImp.class) {
+                if (instance == null) {
+                    instance = new HDBManager(context,path);
+                }
+            }
+        }
+        return instance;
+    }
     @Override
     public SQLiteDatabase getReadableDatabase() {
         return super.getReadableDatabase();

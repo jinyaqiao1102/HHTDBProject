@@ -27,16 +27,6 @@ public class DateBaseManager {
         return instance;
     }
 
-    private SQLiteDatabase openDatabase() {
-        String dbfile = DB_PATH + File.separator + DB_NAME;
-        File file = new File(dbfile);
-        if (!file.exists()) {
-            return null;
-        }
-        SQLiteDatabase database = SQLiteDatabase.openOrCreateDatabase(dbfile, null);
-        return database;
-    }
-
     public void copyDatabase(InputStream newDb) {
 
         InputStream is = null;
@@ -58,72 +48,6 @@ public class DateBaseManager {
         }
     }
 
-    public void updateDatabase(Context context) {
-        SQLiteDatabase database = openDatabase();
-        if (database == null) {
-            try {
-                copyDatabase(context.getAssets().open(DateBaseManager.DB_NAME));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            Cursor cursor = database.rawQuery("select * from db_version", null);
-            int version = 1;
-            while (cursor.moveToNext()) {
-                int versionIndex = cursor.getColumnIndex("version");
-                version = cursor.getInt(versionIndex);
-                break;
-            }
-            if (DB_VERSION > version) {
-                try {
-                    copyDatabase(context.getAssets().open(DateBaseManager.DB_NAME));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
-    public SQLiteDatabase rawQuery() {
-        SQLiteDatabase database = openDatabase();
-        return database;
-    }
-
-    public long insert(String table, String nullColumnHack, ContentValues values) {
-        SQLiteDatabase database = null;
-        long rows = 0;
-        try {
-            database = openDatabase();
-            rows = database.insert(table, nullColumnHack, values);
-
-        } finally {
-            database.close();
-        }
-        return rows;
-    }
-
-    public int delete(String table, String whereClause, String[] whereArgs) {
-        SQLiteDatabase database = null;
-        int rows = 0;
-        try {
-            database = openDatabase();
-            rows = database.delete(table, whereClause, whereArgs);
-        } finally {
-            database.close();
-        }
-        return rows;
-    }
-
-    public int update(String table, ContentValues values, String whereClause, String[] whereArgs) {
-        SQLiteDatabase database = null;
-        int rows = 0;
-        try {
-            database = openDatabase();
-            rows = database.update(table, values, whereClause, whereArgs);
-        } finally {
-            database.close();
-        }
-        return rows;
-    }
 
 }
