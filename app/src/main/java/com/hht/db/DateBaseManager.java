@@ -15,7 +15,7 @@ import java.io.*;
 public class DateBaseManager {
 
 
-    public static final String DB_NAME = "hht_tv.db";
+    public static final String DB_NAME = "hht_tv2.db";
     public static final String PACKAGE_NAME = "com.hht.db";
     public static final String DB_PATH = "/data" + Environment.getDataDirectory().getAbsolutePath() + File.separator + PACKAGE_NAME;
     private final static int DB_VERSION = 1;

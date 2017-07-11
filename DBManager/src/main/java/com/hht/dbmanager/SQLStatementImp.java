@@ -15,23 +15,33 @@ import java.util.Map;
 
 public class SQLStatementImp implements ISQLStatement {
     private SQLiteDatabase mDatabase;
-    private static SQLStatementImp sqlStatementImp = null;
-    private static Object read = new Object();
-    private static Object write = new Object();
-
+    private  Object read = new Object();
+    private  Object write = new Object();
+    private static Map<String ,SQLStatementImp> instances=null;
     private SQLStatementImp(SQLiteDatabase mDatabase) {
         this.mDatabase = mDatabase;
     }
 
     public static SQLStatementImp getInstance(SQLiteDatabase mDatabase) {
-        if (sqlStatementImp == null) {
+        if ( instances== null) {
             synchronized (SQLStatementImp.class) {
-                if (sqlStatementImp == null) {
-                    sqlStatementImp = new SQLStatementImp(mDatabase);
+                if (instances == null) {
+                    instances=new HashMap<String ,SQLStatementImp>();
+                    instances.put(mDatabase.getPath(),new SQLStatementImp(mDatabase));
                 }
             }
+        }else{
+            if(mDatabase!=null){
+                synchronized (SQLStatementImp.class) {
+                    if (instances.get(mDatabase.getPath()) == null) {
+                        instances.put(mDatabase.getPath(), new SQLStatementImp(mDatabase));
+                    }
+                }
+            }else {
+                return null;
+            }
         }
-        return sqlStatementImp;
+        return instances.get(mDatabase.getPath());
     }
 
     @Override
@@ -43,7 +53,7 @@ public class SQLStatementImp implements ISQLStatement {
                 cursor = mDatabase.rawQuery(sql, selectionArgs);
                 while (cursor.moveToNext()) {
                     int count = cursor.getColumnCount();
-                    Map<String, Object> rsTree = new HashMap<>(count);
+                    Map<String, Object> rsTree = new HashMap<String, Object>(count);
                     for (int i = 0; i < count; i++) {
                         String colName = cursor.getColumnName(i);
                         Object colValue = getCursorObject(cursor, i);
@@ -71,7 +81,7 @@ public class SQLStatementImp implements ISQLStatement {
                 cursor = mDatabase.query(table, columns, selection, selectionArgs, groupBy, having, orderBy, limit);
                 while (cursor.moveToNext()) {
                     int count = cursor.getColumnCount();
-                    Map<String, Object> rsTree = new HashMap<>(count);
+                    Map<String, Object> rsTree = new HashMap<String, Object>(count);
                     for (int i = 0; i < count; i++) {
                         String colName = cursor.getColumnName(i);
                         Object colValue = getCursorObject(cursor, i);

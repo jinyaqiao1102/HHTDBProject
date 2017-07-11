@@ -27,14 +27,16 @@ public abstract class HSQLiteDatabaseHelper {
     private final String mName;
     private final CursorFactory mFactory = null;
     //private final String dbPath;
+    private int mNewVersion;
     private SQLiteDatabase mDatabase;
     private boolean mIsInitializing;
     private boolean mEnableWriteAheadLogging;
     private final DatabaseErrorHandler mErrorHandler = null;
 
-    public HSQLiteDatabaseHelper(Context context, String path) {
+    public HSQLiteDatabaseHelper(Context context, String path,int mNewVersion) {
         this.mContext = context;
         this.mName = path;
+        this.mNewVersion=mNewVersion;
     }
 
 
@@ -151,7 +153,30 @@ public abstract class HSQLiteDatabaseHelper {
             }
 
             onConfigure(db);
+            final int version = db.getVersion();
+            if (version != mNewVersion) {
+                if (db.isReadOnly()) {
+                    throw new SQLiteException("Can't upgrade read-only database from version " +
+                            db.getVersion() + " to " + mNewVersion + ": " + mName);
+                }
 
+                db.beginTransaction();
+                try {
+                    if (version == 0) {
+                        onCreate(db);
+                    } else {
+                        if (version > mNewVersion) {
+                            onDowngrade(db, version, mNewVersion);
+                        } else {
+                            onUpgrade(db, version, mNewVersion);
+                        }
+                    }
+                    db.setVersion(mNewVersion);
+                    db.setTransactionSuccessful();
+                } finally {
+                    db.endTransaction();
+                }
+            }
 
             onOpen(db);
 
@@ -184,20 +209,16 @@ public abstract class HSQLiteDatabaseHelper {
     public void onConfigure(SQLiteDatabase db) {
     }
 
+    public abstract void onCreate(SQLiteDatabase db);
 
-    /**
-     * Called when the database has been opened.  The implementation
-     * should check {@link SQLiteDatabase#isReadOnly} before updating the
-     * database.
-     * <p>
-     * This method is called after the database connection has been configured
-     * and after the database schema has been created, upgraded or downgraded as necessary.
-     * If the database connection must be configured in some way before the schema
-     * is created, upgraded, or downgraded, do it in {@link #onConfigure} instead.
-     * </p>
-     *
-     * @param db The database.
-     */
+
+    public abstract void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion);
+
+
+    public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion){
+
+    }
+
     public void onOpen(SQLiteDatabase db) {
     }
 }

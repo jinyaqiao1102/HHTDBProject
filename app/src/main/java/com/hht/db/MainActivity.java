@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.hht.dbmanager.HDBManager;
 import com.hht.dbmanager.ISQLStatement;
 import com.hht.dbmanager.SQLStatementImp;
 
@@ -19,19 +18,20 @@ import static com.hht.db.DateBaseManager.DB_NAME;
 import static com.hht.db.DateBaseManager.DB_PATH;
 
 public class MainActivity extends AppCompatActivity {
-    private HDBManager manager = null;
+    private DBHelperT manager = null;
     private ISQLStatement statement = null;
+    private ISQLStatement statement2 = null;
     private BackAppInfo info = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        try {
-            DateBaseManager.getInstance().copyDatabase(getAssets().open(DateBaseManager.DB_NAME));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            DateBaseManager.getInstance().copyDatabase(getAssets().open(DateBaseManager.DB_NAME));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         info = new BackAppInfo();
         info.setmPkgName("1234567");
         info.setmAppName("jinyaqiao");
@@ -41,9 +41,20 @@ public class MainActivity extends AppCompatActivity {
         info.setmOldVersionCode(4);
         info.setmNewVersionName("iiiiiiii");
         info.setmOldVersionName("99989989");
-        manager =  HDBManager.getInstance(this, DB_PATH + File.separator + DB_NAME);
+        manager =  new DBHelperT(this);
+        DBHelper helper= new DBHelper(this);
+        //manager.getWritableDatabase().setVersion(1);
+        Log.e("=====jinyaqiao====","dbVersion====="+manager.getWritableDatabase().getVersion());
+        Log.e("=====jinyaqiao====","getpath====="+manager.getWritableDatabase().getPath());
+        Log.e("=====jinyaqiao====","dbVersion==helper==="+helper.getWritableDatabase().getVersion());
+        Log.e("=====jinyaqiao====","getpath==helper==="+helper.getWritableDatabase().getPath());
         statement = SQLStatementImp.getInstance(manager.getWritableDatabase());
-        test3();
+        statement2 = SQLStatementImp.getInstance(helper.getWritableDatabase());
+        Log.e("=====jinyaqiao====","statement====="+SQLStatementImp.getInstance(manager.getWritableDatabase()));
+        Log.e("=====jinyaqiao====","getpath==helper==="+SQLStatementImp.getInstance(helper.getWritableDatabase()));
+        Log.e("=====jinyaqiao====","getpath==helper==="+SQLStatementImp.getInstance(helper.getWritableDatabase()));
+       //new Thread(new MyRunable5()).start();
+        //new Thread(new MyRunable6()).start();
     }
 
 
@@ -112,6 +123,50 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("===jinyaqiao=====", "====MyRunable2========" + "count=====" + count);
                 List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
                 Log.i("===jinyaqiao=====", "=====MyRunable2====list.size()======" + list.size());
+            }
+        }
+    }
+    class MyRunable5 implements Runnable {
+
+        @Override
+        public void run() {
+            int count = 0;
+            while (count < 5000) {
+                // List<Map<String, Object>> list=manager.query("select * from db_version",null);
+                count++;
+                info.setmPkgName("1234567");
+                Log.i("===jinyaqiao=====", "====MyRunable5========" + "count=====" + count);
+                List<Map<String, Object>> list = statement.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+                Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData====list.size()======" + list.size());
+                if (list.size() > 0) {
+                    long ret = statement.update("back_app_info", getContentValues(info), "mPkgName=?", new String[]{info.getmPkgName()});
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========update  result======" + ret);
+                } else {
+                    long ret = statement.insert("back_app_info", getContentValues(info));
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========insert  result======" + ret);
+                }
+            }
+        }
+    }
+    class MyRunable6 implements Runnable {
+
+        @Override
+        public void run() {
+            int count = 0;
+            while (count < 5000) {
+                // List<Map<String, Object>> list=manager.query("select * from db_version",null);
+                count++;
+                info.setmPkgName("1234567");
+                Log.i("===jinyaqiao=====", "====MyRunable6========" + "count=====" + count);
+                List<Map<String, Object>> list = statement2.query("select * from back_app_info where mPkgName=?", new String[]{info.getmPkgName()});
+                Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData====list.size()======" + list.size());
+                if (list.size() > 0) {
+                    long ret = statement2.update("back_app_info", getContentValues(info), "mPkgName=?", new String[]{info.getmPkgName()});
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========update  result======" + ret);
+                } else {
+                    long ret = statement2.insert("back_app_info", getContentValues(info));
+                    Log.i("===jinyaqiao=====", "insertOrUpdateBackAppData========insert  result======" + ret);
+                }
             }
         }
     }
